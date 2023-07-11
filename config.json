@@ -1,0 +1,33 @@
+{
+  "srcPlatform": {
+    "ip": "10.125.31.101",
+    "port": "16066"
+  },
+  "SrcNexus": {
+    "repository": "uaf",
+    "username": "admin",
+    "password": "admin123"
+  },
+  "targetPlatform": {
+    "ip": "10.125.31.101",
+    "port": "16066"
+  },
+  "targetNexus": {
+    "repository": "uaf",
+    "username": "admin",
+    "password": "admin123"
+  },
+  "backup": {
+    "directory": "/data/"
+  }
+}
+
+
+
+
+
+
+
+
+
+
