@@ -2,13 +2,16 @@ package common
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/md5"
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 )
@@ -273,4 +276,122 @@ func (e *CircleByteBuffer) Write(bts []byte) (int, error) {
 		return ret, io.EOF
 	}
 	return ret, nil
+}
+
+func randomBoundary() string {
+	var buf [30]byte
+	_, err := io.ReadFull(rand.Reader, buf[:])
+	if err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("%x", buf[:])
+}
+
+func execCMD(Cmd string) (stdoutStr string, err error) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd := exec.Command("sh", "-c", Cmd)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err = cmd.Run()
+	if err != nil {
+		return "", err
+	}
+	return stdout.String(), nil
+
+}
+
+func Upload(url, filePath, abFilePath, username, password, format string) {
+
+	ok, err := PathExists(filePath)
+	if err != nil {
+		log.Fatalln("Check File Error:", err)
+		return
+	}
+	if !ok {
+		log.Fatalln("File ", filePath, "not exists,skip it!")
+		return
+	}
+
+	log.Println("Upload file: ", filePath)
+	filedir, _ := filepath.Split(filePath)
+	//body := NewCircleByteBuffer(1024 * 2)
+	//boundary := randomBoundary()
+	//boundaryBytes := []byte("\r\n--" + boundary + "\r\n")
+	//endBytes := []byte("\r\n--" + boundary + "--\r\n")
+	path, filename := filepath.Split(abFilePath)
+	var cmdline string
+	switch format {
+	case "raw":
+		cmdline = fmt.Sprintf("curl -u %s:%s -X 'POST' '%s' -H 'accept: application/json' -H 'Content-Type: multipart/form-data' -F 'raw.directory=%s' -F 'raw.asset1=@%s' -F 'raw.asset1.filename=%s'", username, password, url, path, filePath, filename)
+	case "npm":
+		cmdline = fmt.Sprintf("cd %s && curl -u %s:%s -X 'POST' '%s' -H 'accept: application/json' -H 'Content-Type: multipart/form-data'  -F 'npm.asset=@%s'", filedir, username, password, url, filename)
+	default:
+		log.Println("Unsupported repo format: ", format)
+		os.Exit(10)
+	}
+
+	log.Println(cmdline)
+	stdStr, err := execCMD(cmdline)
+	if err != nil {
+		log.Println("Upload file ", abFilePath, "failed!")
+	}
+	log.Println(stdStr)
+	log.Println("Upload file ", abFilePath, "success!")
+	log.Println("------------------------------------------------------------------------------------------------------------------------------")
+
+	//req, err := http.NewRequest("POST", url, body)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//req.Header.Add("Connection", "keep-alive")
+	//req.Header.Add("Content-Type", "multipart/form-data; charset=utf-8; boundary="+boundary)
+	//go func() {
+	//	//defer ruisRecovers("upload.run")
+	//	f, err := os.OpenFile(filePath, os.O_RDONLY, 0666)
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//	stat, err := f.Stat()
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//	defer f.Close()
+	//
+	//	path, _ := filepath.Split(abFilePath)
+	//
+	//	header := fmt.Sprintf("raw.directory=\"%s\"; raw.asset1.filename=\"%s\"\r\nContent-Type: multipart/form-data\r\n\r\n", path, stat.Name())
+	//	log.Println("Header: ", header)
+	//	body.Write(boundaryBytes)
+	//	body.Write([]byte(header))
+	//
+	//	fsz := float64(stat.Size())
+	//	fupsz := float64(0)
+	//	buf := make([]byte, 1024*20000)
+	//	for {
+	//		time.Sleep(100 * time.Microsecond)
+	//		n, err := f.Read(buf)
+	//		if n > 0 {
+	//			nz, _ := body.Write(buf[0:n])
+	//			fupsz += float64(nz)
+	//			progress := strconv.Itoa(int((fupsz/fsz)*100)) + "%"
+	//			fmt.Println("upload:", progress, "|", strconv.FormatFloat(fupsz, 'f', 0, 64), "/", stat.Size())
+	//		}
+	//		if err == io.EOF {
+	//			break
+	//		}
+	//	}
+	//	body.Write(endBytes)
+	//	body.Write(nil)
+	//}()
+	//resp, err := http.DefaultClient.Do(req)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//defer resp.Body.Close()
+	//if resp.StatusCode == 204 {
+	//	fmt.Println("上传成功")
+	//} else {
+	//	fmt.Println("上传失败,StatusCode:", resp.StatusCode)
+	//}
 }

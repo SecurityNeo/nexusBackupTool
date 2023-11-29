@@ -53,7 +53,7 @@ func StartBackup(configDirectory string, parallelism int) error {
 		return nil
 	}
 
-	DI := DownloadInfo{
+	DI := types.DownloadInfo{
 		Files: files,
 		Chs:   make(chan int, parallelism),
 		Ans:   make(chan bool),
@@ -96,18 +96,9 @@ func StartBackup(configDirectory string, parallelism int) error {
 	return nil
 }
 
-func (di *DownloadInfo) Work(downloadUrl string, targetPath string, targetMd5 string) {
-	defer func() {
-		<-di.Chs
-		di.Wg.Done()
-	}()
-	common.Download(downloadUrl, targetPath, targetMd5)
-	di.Ans <- true
-}
-
-func getFileData(Url string) (FileData, error) {
-	var fileData FileData
-	var components *Components
+func getFileData(Url string) (types.FileData, error) {
+	var fileData types.FileData
+	var components *types.Components
 	components, err := Request("GET", Url, "", "")
 	if err != nil {
 		return nil, err
@@ -180,7 +171,7 @@ func (jst *JsonStruct) Load(filename string, v interface{}) {
 	}
 }
 
-func Request(method string, url string, continueToken string, RequestBody interface{}) (*Components, error) {
+func Request(method string, url string, continueToken string, RequestBody interface{}) (*types.Components, error) {
 	var URL string
 	body, err := json.Marshal(RequestBody)
 	if err != nil {
@@ -219,7 +210,7 @@ func Request(method string, url string, continueToken string, RequestBody interf
 	}
 	resBody, _ := ioutil.ReadAll(resp.Body)
 	defer resp.Body.Close()
-	result := &Components{}
+	result := &types.Components{}
 	json.Unmarshal(resBody, result)
 	return result, nil
 }

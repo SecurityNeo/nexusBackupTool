@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/SecurityNeo/NexusbackupTool/service/backup"
+	"github.com/SecurityNeo/NexusbackupTool/service/recover"
 	"log"
 	"os"
 	"path/filepath"
@@ -33,7 +34,7 @@ func init() {
 
 func usage() {
 	fmt.Fprintf(os.Stderr, `Nexus backup and recover tool version: 0.1 auther: neo
-Usage: NexusBackupTool [-adh]
+Usage: NexusTool [-adh]
  
 Options:
 `)
@@ -54,9 +55,15 @@ func main() {
 	} else {
 		configDirectory = GetCurrentDirectory() + "config.json"
 	}
-	// TODO: 支持recover
+
 	if Flag.action == "backup" {
 		err := backup.StartBackup(configDirectory, Flag.parallelism)
+		if err != nil {
+			log.Fatalln("Error: ", err)
+			os.Exit(20)
+		}
+	} else if Flag.action == "recover" {
+		err := recover.StartRecover(configDirectory, Flag.parallelism)
 		if err != nil {
 			log.Fatalln("Error: ", err)
 			os.Exit(20)
